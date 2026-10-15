@@ -1,0 +1,148 @@
+CREATE DATABASE IF NOT EXISTS hospital_db;
+USE hospital_db;
+
+CREATE TABLE IF NOT EXISTS roles (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY UK_ROLE_NAME (name)
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    first_name VARCHAR(50) DEFAULT NULL,
+    last_name VARCHAR(50) DEFAULT NULL,
+    phone VARCHAR(20) DEFAULT NULL,
+    enabled BOOLEAN DEFAULT TRUE,
+    PRIMARY KEY (id),
+    UNIQUE KEY UK_USERS_USERNAME (username),
+    UNIQUE KEY UK_USERS_EMAIL (email)
+);
+
+CREATE TABLE IF NOT EXISTS user_roles (
+    user_id BIGINT NOT NULL,
+    role_id BIGINT NOT NULL,
+    PRIMARY KEY (user_id, role_id),
+    CONSTRAINT FK_USER_ROLES_USER FOREIGN KEY (user_id) REFERENCES users (id),
+    CONSTRAINT FK_USER_ROLES_ROLE FOREIGN KEY (role_id) REFERENCES roles (id)
+);
+
+CREATE TABLE IF NOT EXISTS departments (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    PRIMARY KEY (id),
+    UNIQUE KEY UK_DEPARTMENT_NAME (name)
+);
+
+CREATE TABLE IF NOT EXISTS doctors (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    doctor_id VARCHAR(30) NOT NULL,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) DEFAULT NULL,
+    specialization VARCHAR(100) DEFAULT NULL,
+    experience INT DEFAULT 0,
+    availability VARCHAR(255) DEFAULT NULL,
+    department_id BIGINT DEFAULT NULL,
+    user_id BIGINT DEFAULT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY UK_DOCTOR_ID (doctor_id),
+    UNIQUE KEY UK_DOCTOR_EMAIL (email),
+    UNIQUE KEY UK_DOCTOR_USER (user_id),
+    CONSTRAINT FK_DOCTOR_DEPARTMENT FOREIGN KEY (department_id) REFERENCES departments (id),
+    CONSTRAINT FK_DOCTOR_USER FOREIGN KEY (user_id) REFERENCES users (id)
+);
+
+CREATE TABLE IF NOT EXISTS patients (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    patient_id VARCHAR(30) NOT NULL,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    date_of_birth DATE DEFAULT NULL,
+    gender VARCHAR(20) DEFAULT NULL,
+    phone VARCHAR(20) DEFAULT NULL,
+    email VARCHAR(100) DEFAULT NULL,
+    address TEXT,
+    medical_history TEXT,
+    user_id BIGINT DEFAULT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY UK_PATIENT_ID (patient_id),
+    UNIQUE KEY UK_PATIENT_USER (user_id),
+    CONSTRAINT FK_PATIENT_USER FOREIGN KEY (user_id) REFERENCES users (id)
+);
+
+CREATE TABLE IF NOT EXISTS appointments (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    appointment_id VARCHAR(30) NOT NULL,
+    appointment_date DATE NOT NULL,
+    appointment_time TIME NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+    notes TEXT,
+    patient_id BIGINT NOT NULL,
+    doctor_id BIGINT NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY UK_APPOINTMENT_ID (appointment_id),
+    CONSTRAINT FK_APPOINTMENT_PATIENT FOREIGN KEY (patient_id) REFERENCES patients (id),
+    CONSTRAINT FK_APPOINTMENT_DOCTOR FOREIGN KEY (doctor_id) REFERENCES doctors (id)
+);
+
+CREATE TABLE IF NOT EXISTS prescriptions (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    prescription_id VARCHAR(30) NOT NULL,
+    diagnosis VARCHAR(255) DEFAULT NULL,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    doctor_id BIGINT NOT NULL,
+    patient_id BIGINT NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY UK_PRESCRIPTION_ID (prescription_id),
+    CONSTRAINT FK_PRESCRIPTION_DOCTOR FOREIGN KEY (doctor_id) REFERENCES doctors (id),
+    CONSTRAINT FK_PRESCRIPTION_PATIENT FOREIGN KEY (patient_id) REFERENCES patients (id)
+);
+
+CREATE TABLE IF NOT EXISTS prescription_items (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    medicine_name VARCHAR(100) NOT NULL,
+    dosage VARCHAR(50) DEFAULT NULL,
+    frequency VARCHAR(50) DEFAULT NULL,
+    duration VARCHAR(50) DEFAULT NULL,
+    instructions TEXT,
+    prescription_id BIGINT NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT FK_PRESCRIPTION_ITEM FOREIGN KEY (prescription_id) REFERENCES prescriptions (id)
+);
+
+CREATE TABLE IF NOT EXISTS bills (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    bill_number VARCHAR(30) NOT NULL,
+    consultation_fee DECIMAL(10,2) DEFAULT 0.00,
+    other_charges DECIMAL(10,2) DEFAULT 0.00,
+    total_amount DECIMAL(10,2) DEFAULT 0.00,
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+    issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    patient_id BIGINT NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY UK_BILL_NUMBER (bill_number),
+    CONSTRAINT FK_BILL_PATIENT FOREIGN KEY (patient_id) REFERENCES patients (id)
+);
+
+CREATE TABLE IF NOT EXISTS payments (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    payment_id VARCHAR(30) NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    payment_method VARCHAR(50) DEFAULT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+    payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    bill_id BIGINT NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY UK_PAYMENT_ID (payment_id),
+    CONSTRAINT FK_PAYMENT_BILL FOREIGN KEY (bill_id) REFERENCES bills (id)
+);
+
+INSERT INTO roles (name) VALUES ('ADMIN'), ('DOCTOR'), ('RECEPTIONIST'), ('PATIENT')
+ON DUPLICATE KEY UPDATE name = VALUES(name);
